@@ -23,6 +23,8 @@ AttachRequest(опционально), AttachAccept, Paging
 MME
 */
 
+#pragma once
+
 #include <cstdint>
 #include <vector>
 
