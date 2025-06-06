@@ -73,6 +73,12 @@ private:
     std::optional<SlapOut> uecontext_release_response_handler_8(const SlapEvent& event);
 
 private:
+    void cleanup_each_hour(uint64_t timestamp);
+    void erase_in_tmsi_to_imsi(uint64_t imsi);
+    void erase_in_mme_to_imsi(uint64_t imsi);
+
+private:
+    uint64_t cleanup_timestamp;
     std::unordered_map<uint64_t, ImsiRecord> _imsi_list;
     std::unordered_multimap<uint32_t, uint64_t> _enodeb_to_imsi_attach_tmp;
     std::unordered_map<uint32_t, uint64_t> _tmsi_to_imsi;

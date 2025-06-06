@@ -3,6 +3,7 @@
 
 const uint64_t TIMEOUT_SEC = 1000;
 const uint64_t TIMEOUT_24HOURS = 24 * 60 * 60 * 1000;
+const uint64_t TIMEOUT_CLEANUP = 60 * 60 * 1000;
 
 
 std::optional<SlapOut> SlapDb::handler(const SlapEvent& event)
@@ -40,8 +41,58 @@ std::optional<SlapOut> SlapDb::handler(const SlapEvent& event)
     return std::nullopt;
 }
 
+
+void SlapDb::cleanup_each_hour(uint64_t timestamp)
+{
+    if (timestamp - cleanup_timestamp < TIMEOUT_CLEANUP) return;
+
+    cleanup_timestamp = timestamp;
+    for (auto it = _imsi_list.begin(); it != _imsi_list.end(); ) {
+        if (timestamp - it->second.init_timestamp > TIMEOUT_24HOURS) {
+            uint64_t imsi = it->first;
+            it = _imsi_list.erase(it);
+
+            // удаление связанных данных из таблиц _tmsi_to_imsi, _mme_to_imsi
+            erase_in_tmsi_to_imsi(imsi);
+            erase_in_mme_to_imsi(imsi);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+void SlapDb::erase_in_tmsi_to_imsi(uint64_t imsi)
+{
+    for (auto it = _tmsi_to_imsi.begin(); it != _tmsi_to_imsi.end(); ) {
+        if (it->second == imsi) {
+            it = _tmsi_to_imsi.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+
+void SlapDb::erase_in_mme_to_imsi(uint64_t imsi)
+{
+    for (auto it = _mme_to_imsi.begin(); it != _mme_to_imsi.end(); ) {
+        if (it->second == imsi) {
+            it = _mme_to_imsi.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+
 std::optional<SlapOut> SlapDb::attach_request_handler_1(const SlapEvent& event)
 {
+    // запуск процеудры обнаружегния и удаления старых imsi каждые 1 час
+    cleanup_each_hour(event.timestamp);
+
     if (event.imsi == 0 && event.m_tmsi) {
         auto it = _tmsi_to_imsi.find(event.m_tmsi);
         if (it == _tmsi_to_imsi.end()) return std::nullopt;
