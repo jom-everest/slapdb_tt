@@ -76,6 +76,7 @@ private:
     void cleanup_each_hour(uint64_t timestamp);
     void erase_in_tmsi_to_imsi(uint64_t imsi);
     void erase_in_mme_to_imsi(uint64_t imsi);
+    std::optional<std::unordered_map<uint64_t, ReleaseRecord>::iterator> search_in_release_table(uint64_t timestamp, uint32_t enodeb_id, uint32_t mme_id);
 
 private:
     uint64_t cleanup_timestamp;

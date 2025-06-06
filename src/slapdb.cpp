@@ -309,20 +309,7 @@ std::optional<SlapOut> SlapDb::uecontext_release_command_handler_7(const SlapEve
 
 std::optional<SlapOut> SlapDb::uecontext_release_response_handler_8(const SlapEvent& event)
 {
-    std::optional<decltype(_release_list_tmp)::iterator> it_release = std::nullopt;
-    for (auto it = _release_list_tmp.begin(); it != _release_list_tmp.end();) {
-        if (event.timestamp - it->second.timestamp > TIMEOUT_SEC) {
-            it = _release_list_tmp.erase(it);
-        }
-        else {
-            if (it->second.enodeb_id == event.enodeb_id && it->second.mme_id == event.mme_id) {
-                if (it_release) return std::nullopt;
-                it_release = it;
-            }
-            ++it;
-        }
-    }
-
+    auto it_release = search_in_release_table(event.timestamp, event.enodeb_id, event.mme_id);
     if (!it_release) return std::nullopt;
 
     auto imsi = it_release.value()->first;
@@ -346,6 +333,23 @@ std::optional<SlapOut> SlapDb::uecontext_release_response_handler_8(const SlapEv
 }
 
 
+std::optional<std::unordered_map<uint64_t, SlapDb::ReleaseRecord>::iterator>
+SlapDb::search_in_release_table(uint64_t timestamp, uint32_t enodeb_id, uint32_t mme_id)
+{
+    std::optional<decltype(_release_list_tmp)::iterator> it_release = std::nullopt;
+    for (auto it = _release_list_tmp.begin(); it != _release_list_tmp.end();) {
+        if (timestamp - it->second.timestamp > TIMEOUT_SEC) {
+            it = _release_list_tmp.erase(it);
+        }
+        else {
+            if (it->second.enodeb_id == enodeb_id && it->second.mme_id == mme_id) {
+                if (it_release) return std::nullopt;
+                it_release = it;
+            }
+            ++it;
+        }
+    }
 
-
+    return it_release;
+}
 
